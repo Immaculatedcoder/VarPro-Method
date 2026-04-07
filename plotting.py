@@ -1,9 +1,14 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 
 def plot_signals(
-    TE, clean_signal, noisy_signal=None, title="Generating Bi-exponential Data"
+    TE,
+    clean_signal,
+    noisy_signal=None,
+    sigma=None,
+    title="Generating Bi-exponential Data",
 ):
     """
     Plot clean and noisy signal
@@ -21,18 +26,19 @@ def plot_signals(
     palette = sns.color_palette("deep")
 
     plt.figure(figsize=(9, 5), dpi=100)
+
     plt.plot(TE, clean_signal, linewidth=2.5, color=palette[0], label="Clean signal")
 
     if noisy_signal is not None:
         plt.scatter(
             TE,
             noisy_signal,
-            s=30,
+            s=20,
             color=palette[1],
-            alpha=0.7,
+            alpha=0.6,
             edgecolors="black",
-            linewidths=0.5,
-            label="Noisy data",
+            linewidths=0.2,
+            label=f"Noisy data with sigma {sigma}",
         )
 
     plt.xlabel("TE", fontsize=12)
