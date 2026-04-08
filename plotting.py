@@ -12,7 +12,7 @@ def plot_signals(
     sns.set_theme(style="whitegrid", context="talk")
     palette = sns.color_palette("deep")
 
-    plt.figure(figsize=(9, 5), dpi=150)
+    plt.figure(figsize=(7, 5), dpi=150)
 
     if clean_signal is not None:
         plt.plot(
