@@ -7,4 +7,4 @@ TRUE_PARAMS = {"C1": 0.4, "C2": 0.6, "T21": 30, "T22": 200}
 TE = np.linspace(0, 500, 1000)
 
 # Noise levels
-sigma = [0.0, 0.05, 0.1, 0.2]
+sigma = [0.01, 0.05, 0.1, 0.2]
