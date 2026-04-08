@@ -102,7 +102,7 @@ def varpro_hessian(TE, Y, T21, T22):
 
 
 def gauss_newton_varpro(
-    TE, Y, alpha0, max_iter=1000, tol=1e-8, damping=1e-8, verbose=True
+    TE, Y, alpha0, max_iter=100, tol=1e-8, damping=1e-3, verbose=True
 ):
     alpha = np.asarray(alpha0, dtype=float).copy()
     history = []
@@ -110,23 +110,30 @@ def gauss_newton_varpro(
     for k in range(max_iter):
         T21, T22 = alpha
 
+        r, a_hat, Phi = reduced_residual(TE, Y, T21, T22)
         grad = varpro_gradient(TE, Y, T21, T22)
-        H = varpro_hessian(TE, Y, T21, T22) + damping * np.eye(2)
 
-        obj = reduced_objective(TE, Y, T21, T22)
+        DPhi = DPhi_alpha_tensor(TE, T21, T22)
+        J = varpro_jacobian_columns(Y, Phi, DPhi)
 
+        # Levenberg–Marquardt Hessian
+        H = 2 * (J.T @ J) + damping * np.eye(2)
+
+        obj = float(r @ r)
+
+        # Solve step
         try:
             rho = np.linalg.solve(H, -grad)
         except np.linalg.LinAlgError:
-            rho = -np.linalg.pinv(H) @ grad
+            rho = -grad  # fallback to gradient descent
 
         # Backtracking line search
         step_scale = 1.0
         accepted = False
 
-        for _ in range(20):
+        for _ in range(25):
             alpha_trial = alpha + step_scale * rho
-            alpha_trial = np.maximum(alpha_trial, 1e-10)
+            alpha_trial = np.maximum(alpha_trial, 1e-8)
 
             obj_trial = reduced_objective(TE, Y, alpha_trial[0], alpha_trial[1])
 
@@ -158,17 +165,19 @@ def gauss_newton_varpro(
             )
 
         if not accepted:
+            # Increase damping if step fails
+            damping *= 10
             if verbose:
-                print(
-                    "Step did not reduce objective even after backtracking. Stopping."
-                )
-            break
+                print("Increasing damping:", damping)
+            continue
 
+        # Successful step → decrease damping
+        damping *= 0.7
         alpha = alpha_trial
 
         if step_norm < tol:
             if verbose:
-                print("Converged based on step norm.")
+                print("Converged.")
             break
 
     T21_opt, T22_opt = alpha
