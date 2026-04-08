@@ -5,29 +5,29 @@ import numpy as np
 
 def plot_signals(
     TE,
-    clean_signal,
+    clean_signal=None,
     noisy_signal=None,
+    fitted_signal=None,
     sigma=None,
     title="Generating Bi-exponential Data",
 ):
     """
-    Plot clean and noisy signal
-
-    Parameters
-    ----------
-    TE: 1D array
-    clean_signal: 1D array
-    noisy_signal: 1D array
-    title: str
+    Plot clean, noisy, and fitted signals
     """
 
-    # Seaborn config
     sns.set_theme(style="whitegrid", context="talk")
     palette = sns.color_palette("deep")
 
-    plt.figure(figsize=(9, 5), dpi=100)
+    plt.figure(figsize=(9, 5), dpi=150)
 
-    plt.plot(TE, clean_signal, linewidth=2.5, color=palette[0], label="Clean signal")
+    if clean_signal is not None:
+        plt.plot(
+            TE,
+            clean_signal,
+            linewidth=2.5,
+            color=palette[0],
+            label="Clean signal",
+        )
 
     if noisy_signal is not None:
         plt.scatter(
@@ -38,7 +38,17 @@ def plot_signals(
             alpha=0.6,
             edgecolors="black",
             linewidths=0.2,
-            label=f"Noisy data with sigma {sigma}",
+            label=f"Noisy data with sigma={sigma}",
+        )
+
+    if fitted_signal is not None:
+        plt.plot(
+            TE,
+            fitted_signal,
+            linewidth=2.5,
+            linestyle="--",
+            color=palette[2],
+            label="VarPro fit",
         )
 
     plt.xlabel("TE", fontsize=12)
