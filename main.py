@@ -19,7 +19,7 @@ def main():
             TE=TE,
             params=TRUE_PARAMS,
             sigma=s,
-            seed=42,
+            seed=None,
         )
 
         # VarPro fit
@@ -29,7 +29,7 @@ def main():
             alpha0=alpha0,
             max_iter=1000,
             tol=1e-8,
-            damping=1e-4,
+            damping=0e-4,
             verbose=False,
         )
 
@@ -56,7 +56,6 @@ def main():
             T21_s, T22_s = T22_s, T21_s
             C1_s, C2_s = C2_s, C1_s
 
-        # Make sure this order matches your models.py definition
         varpro_fit = biexponential(TE, C1_v, C2_v, T21_v, T22_v)
         scipy_fit = biexponential(TE, C1_s, C2_s, T21_s, T22_s)
 

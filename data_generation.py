@@ -44,7 +44,7 @@ def generate_noisy_data(signal, sigma, seed):
     return signal + noise
 
 
-def dataset(TE, params, sigma, seed=42):
+def dataset(TE, params, sigma, seed=None):
     """
     Generate clean and noisy data
 

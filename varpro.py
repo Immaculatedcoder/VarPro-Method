@@ -102,7 +102,7 @@ def varpro_hessian(TE, Y, T21, T22):
 
 
 def gauss_newton_varpro(
-    TE, Y, alpha0, max_iter=100, tol=1e-8, damping=1e-3, verbose=True
+    TE, Y, alpha0, max_iter=100, tol=1e-8, damping=1e-7, verbose=True
 ):
     alpha = np.asarray(alpha0, dtype=float).copy()
     history = []
