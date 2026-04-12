@@ -1,9 +1,10 @@
 from config import TRUE_PARAMS, TE, sigma
 from data_generation import dataset
-from plotting import plot_signals
+from plotting import plot_signals, plot_histogram
 from varpro import gauss_newton_varpro
 from scipy_opt import scipy_varpro_optimize
 from models import biexponential
+from statistical_analysis import run_N_realizations, reorder_params
 
 
 def main():
@@ -87,5 +88,25 @@ def main():
         )
 
 
+def task2():
+    sigma = 0.05
+    results = run_N_realizations(
+        N=10, sigma=sigma, alpha0=(20.0, 150.0), max_iter=1000, tol=1e-8, damping=1e-7
+    )
+    varpro_results = results["varpro_results"]
+    scipy_results = results["scipy_results"]
+
+    for param_name in ["C1", "C2", "T21", "T22"]:
+        plot_histogram(
+            varpro_data=varpro_results[param_name],
+            scipy_data=scipy_results[param_name],
+            true_value=TRUE_PARAMS[param_name],
+            param_name=param_name,
+            sigma=sigma,
+            output_dir="results",
+        )
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    task2()

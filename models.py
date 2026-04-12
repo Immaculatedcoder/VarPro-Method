@@ -49,7 +49,7 @@ def DPhi_alpha_tensor(TE, T21, T22):
     exp2 = np.exp(-TE / T22)
 
     dcol1_dT21 = (TE / T21**2) * exp1
-    dcol2_dT22 = (TE / T21**2) * exp2
+    dcol2_dT22 = (TE / T22**2) * exp2
 
     dPhi_dT21 = np.column_stack((dcol1_dT21, np.zeros_like(TE)))
     dPhi_dT22 = np.column_stack((np.zeros_like(TE), dcol2_dT22))

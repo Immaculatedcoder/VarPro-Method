@@ -102,82 +102,109 @@ def varpro_hessian(TE, Y, T21, T22):
 
 
 def gauss_newton_varpro(
-    TE, Y, alpha0, max_iter=100, tol=1e-8, damping=1e-7, verbose=True
+    TE, Y, alpha0, max_iter=100, tol=1e-8, damping=1e-3, verbose=True
 ):
     alpha = np.asarray(alpha0, dtype=float).copy()
     history = []
+
+    # Damping bounds to prevent runaway in either direction
+    damping_min, damping_max = 1e-12, 1e12
 
     for k in range(max_iter):
         T21, T22 = alpha
 
         r, a_hat, Phi = reduced_residual(TE, Y, T21, T22)
         grad = varpro_gradient(TE, Y, T21, T22)
+        grad_norm = np.linalg.norm(grad)
+        obj = float(r @ r)
+
+        # First-order convergence check (gradient near zero = at a minimum)
+        if grad_norm < tol:
+            history.append(
+                {
+                    "iter": k,
+                    "alpha": alpha.copy(),
+                    "objective": obj,
+                    "grad_norm": grad_norm,
+                    "step_norm": 0.0,
+                }
+            )
+            if verbose:
+                print(f"Converged (||grad||={grad_norm:.3e} < tol).")
+            break
 
         DPhi = DPhi_alpha_tensor(TE, T21, T22)
         J = varpro_jacobian_columns(Y, Phi, DPhi)
 
-        # Levenberg–Marquardt Hessian
-        H = 2 * (J.T @ J) + damping * np.eye(2)
+        # Marquardt scaling: damping multiplies diag(J^T J), not I.
+        # This makes regularization invariant to parameter scaling
+        # (important here since T21 ~ 30 and T22 ~ 200).
+        JTJ = J.T @ J
+        diagJTJ = np.diag(np.diag(JTJ))
 
-        obj = float(r @ r)
-
-        # Solve step
-        try:
-            rho = np.linalg.solve(H, -grad)
-        except np.linalg.LinAlgError:
-            rho = -grad  # fallback to gradient descent
-
-        # Backtracking line search
-        step_scale = 1.0
+        # Try the LM step; if rejected, increase damping and retry
+        # *without* recomputing J or grad (inner LM loop).
         accepted = False
+        for _ in range(30):
+            H = 2 * JTJ + damping * diagJTJ
+            try:
+                rho = np.linalg.solve(H, -grad)
+            except np.linalg.LinAlgError:
+                damping = min(damping * 10, damping_max)
+                continue
 
-        for _ in range(25):
-            alpha_trial = alpha + step_scale * rho
-            alpha_trial = np.maximum(alpha_trial, 1e-8)
+            # Cap step so we never make a parameter non-positive.
+            step_scale = 1.0
+            alpha_trial = alpha + rho
+            if np.any(alpha_trial <= 0):
+                # Largest scale that keeps alpha + s*rho > 0
+                neg = rho < 0
+                if np.any(neg):
+                    step_scale = 0.95 * np.min(-alpha[neg] / rho[neg])
+                alpha_trial = alpha + step_scale * rho
 
             obj_trial = reduced_objective(TE, Y, alpha_trial[0], alpha_trial[1])
 
             if obj_trial < obj:
                 accepted = True
+                # Successful step: relax damping
+                damping = max(damping * 0.5, damping_min)
                 break
+            else:
+                # Rejected: tighten damping and try again
+                damping = min(damping * 5, damping_max)
+                if damping >= damping_max:
+                    break
 
-            step_scale *= 0.5
-
-        step_norm = np.linalg.norm(step_scale * rho)
+        step_norm = np.linalg.norm(alpha_trial - alpha) if accepted else 0.0
 
         history.append(
             {
                 "iter": k,
                 "alpha": alpha.copy(),
                 "objective": obj,
-                "grad_norm": np.linalg.norm(grad),
+                "grad_norm": grad_norm,
                 "step_norm": step_norm,
             }
         )
 
         if verbose:
             print(
-                f"iter={k:2d} | "
-                f"alpha={alpha} | "
-                f"obj={obj:.6e} | "
-                f"||grad||={np.linalg.norm(grad):.3e} | "
-                f"step={step_norm:.3e}"
+                f"iter={k:2d} | alpha={alpha} | obj={obj:.6e} | "
+                f"||grad||={grad_norm:.3e} | step={step_norm:.3e} | "
+                f"damping={damping:.2e}"
             )
 
         if not accepted:
-            # Increase damping if step fails
-            damping *= 10
             if verbose:
-                print("Increasing damping:", damping)
-            continue
+                print("Line search failed; stopping.")
+            break
 
-        # Successful step → decrease damping
-        damping *= 0.7
         alpha = alpha_trial
 
-        if step_norm < tol:
+        if step_norm < tol * (1.0 + np.linalg.norm(alpha)):
             if verbose:
-                print("Converged.")
+                print("Converged (step size).")
             break
 
     T21_opt, T22_opt = alpha
