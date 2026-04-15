@@ -91,7 +91,7 @@ def main():
 def task2():
     sigma = 0.05
     results = run_N_realizations(
-        N=2000, sigma=sigma, alpha0=(50, 85), max_iter=1000, tol=1e-8, damping=1e-7
+        N=2000, sigma=sigma, alpha0=(50, 300), max_iter=1000, tol=1e-8, damping=1e-7
     )
     varpro_results = results["varpro_results"]
     scipy_results = results["scipy_results"]
@@ -103,7 +103,7 @@ def task2():
             true_value=TRUE_PARAMS[param_name],
             param_name=param_name,
             sigma=sigma,
-            output_dir="results1",
+            output_dir="results2",
         )
 
 
